@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campus Event Management & Registration Portal</title>
+  <!-- Bootstrap 5 CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="#"><i class="bi bi-mortarboard-fill me-2"></i>Campus Events</a>
+      <button class="btn btn-light btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#addEventModal">
+        <i class="bi bi-plus-circle me-1"></i> Add Event
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero Banner -->
+  <div class="bg-white border-bottom py-4 mb-4">
+    <div class="container text-center text-md-start">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h1 class="h3 fw-bold text-dark">Campus Event Management & Seat Reservation</h1>
+          <p class="text-muted mb-0">Discover upcoming university workshops, seminars, and fests. Reserve your seat live!</p>
+        </div>
+        <div class="col-md-4 mt-3 mt-md-0">
+          <input type="text" id="searchInput" class="form-control" placeholder="Search events..." onkeyup="filterEvents()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Events Grid -->
+  <div class="container mb-5">
+    <div class="row g-4" id="eventListContainer">
+      <!-- Events injected dynamically by JavaScript -->
+    </div>
+  </div>
+
+  <!-- Registration Form Modal -->
+  <div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="regModalTitle">Event Registration</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="registrationForm">
+            <input type="hidden" id="selectedEventId">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Full Name</label>
+              <input type="text" class="form-control" id="studentName" required placeholder="e.g. John Doe">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Registration Number</label>
+              <input type="text" class="form-control" id="regNum" required placeholder="e.g. 12201928">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">University Email</label>
+              <input type="email" class="form-control" id="studentEmail" required placeholder="student@lpu.in">
+            </div>
+            <button type="submit" class="btn btn-primary w-100 fw-bold">Confirm Registration & Get Pass</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registration Ticket Confirmation Modal -->
+  <div class="modal fade" id="ticketModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title"><i class="bi bi-check-circle-fill me-2"></i>Registration Confirmed</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center" id="ticketContent">
+          <!-- Ticket details rendered via JS -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary w-100" onclick="window.print()">Print Ticket Slip</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add New Event Modal (Organizer Module) -->
+  <div class="modal fade" id="addEventModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title">Create New Campus Event</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addEventForm">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Event Title</label>
+              <input type="text" class="form-control" id="newEventTitle" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Category</label>
+              <select class="form-select" id="newEventCategory">
+                <option value="Workshop">Workshop</option>
+                <option value="Seminar">Seminar</option>
+                <option value="Cultural Fest">Cultural Fest</option>
+                <option value="Hackathon">Hackathon</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Venue</label>
+              <input type="text" class="form-control" id="newEventVenue" required placeholder="e.g. Block 34, Room 201">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Total Available Seats</label>
+              <input type="number" class="form-control" id="newEventSeats" min="1" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Description</label>
+              <textarea class="form-control" id="newEventDesc" rows="2" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-dark w-100 fw-bold">Publish Event</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // Initial Default Data
+    const defaultEvents = [
+      {
+        id: 1,
+        title: "Web Development & Cloud Workshop",
+        category: "Workshop",
+        venue: "Auditorium 3",
+        seats: 30,
+        desc: "Learn modern web development using HTML, CSS, JavaScript, and cloud deployment techniques."
+      },
+      {
+        id: 2,
+        title: "Annual Tech Hackathon 2026",
+        category: "Hackathon",
+        venue: "Innovation Lab",
+        seats: 5,
+        desc: "Build real-world web applications and compete for awards in a 24-hour development sprint."
+      },
+      {
+        id: 3,
+        title: "AI & Data Science Guest Lecture",
+        category: "Seminar",
+        venue: "Block 32 Hall B",
+        seats: 0,
+        desc: "Industry experts break down recent developments in artificial intelligence and career paths."
+      }
+    ];
+
+    // Initialize events state from localStorage or defaults
+    let events = JSON.parse(localStorage.getItem('campus_events')) || defaultEvents;
+
+    function renderEvents(itemsToRender = events) {
+      const container = document.getElementById('eventListContainer');
+      container.innerHTML = '';
+
+      if (itemsToRender.length === 0) {
+        container.innerHTML = `<div class="col-12 text-center text-muted py-5"><h5>No matching events found.</h5></div>`;
+        return;
+      }
+
+      itemsToRender.forEach(ev => {
+        const isFull = ev.seats <= 0;
+        const badgeColor = ev.category === 'Workshop' ? 'bg-primary' : ev.category === 'Hackathon' ? 'bg-danger' : 'bg-info text-dark';
+        
+        const cardHTML = `
+          <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0">
+              <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="badge ${badgeColor}">${ev.category}</span>
+                  <span class="badge ${isFull ? 'bg-secondary' : 'bg-success'}">
+                    ${isFull ? 'Housefull' : ev.seats + ' Seats Left'}
+                  </span>
+                </div>
+                <h5 class="card-title fw-bold text-dark">${ev.title}</h5>
+                <p class="card-text text-muted small flex-grow-1">${ev.desc}</p>
+                <div class="border-top pt-3 mt-2">
+                  <p class="small mb-2"><strong><i class="bi bi-geo-alt-fill text-danger me-1"></i>Venue:</strong> ${ev.venue}</p>
+                  <button class="btn ${isFull ? 'btn-secondary disabled' : 'btn-outline-primary'} w-100 fw-semibold" 
+                          onclick="openRegistrationModal(${ev.id})">
+                    ${isFull ? 'Seats Full' : 'Reserve Seat Now'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        container.innerHTML += cardHTML;
+      });
+      
+      localStorage.setItem('campus_events', JSON.stringify(events));
+    }
+
+    function filterEvents() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = events.filter(e => 
+        e.title.toLowerCase().includes(query) || 
+        e.category.toLowerCase().includes(query) ||
+        e.venue.toLowerCase().includes(query)
+      );
+      renderEvents(filtered);
+    }
+
+    function openRegistrationModal(eventId) {
+      const selected = events.find(e => e.id === eventId);
+      if(!selected || selected.seats <= 0) return;
+      
+      document.getElementById('selectedEventId').value = eventId;
+      document.getElementById('regModalTitle').innerText = 'Register: ' + selected.title;
+      new bootstrap.Modal(document.getElementById('registerModal')).show();
+    }
+
+    // Handle Event Registration Submission
+    document.getElementById('registrationForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const eventId = parseInt(document.getElementById('selectedEventId').value);
+      const name = document.getElementById('studentName').value;
+      const regNum = document.getElementById('regNum').value;
+      const email = document.getElementById('studentEmail').value;
+
+      const eventIndex = events.findIndex(e => e.id === eventId);
+      if (eventIndex !== -1 && events[eventIndex].seats > 0) {
+        events[eventIndex].seats -= 1;
+        renderEvents();
+
+        // Close form modal
+        bootstrap.Modal.getInstance(document.getElementById('registerModal')).hide();
+
+        // Render ticket modal
+        const ticketContent = `
+          <div class="p-3 border rounded bg-light">
+            <h6 class="fw-bold text-primary mb-1">${events[eventIndex].title}</h6>
+            <p class="small text-muted mb-3">Campus Registration Pass</p>
+            <hr>
+            <p class="mb-1 text-start"><strong>Student Name:</strong> ${name}</p>
+            <p class="mb-1 text-start"><strong>Reg No:</strong> ${regNum}</p>
+            <p class="mb-1 text-start"><strong>Email:</strong> ${email}</p>
+            <p class="mb-1 text-start"><strong>Venue:</strong> ${events[eventIndex].venue}</p>
+            <p class="mb-0 text-start"><strong>Pass ID:</strong> CAS-${Math.floor(100000 + Math.random() * 900000)}</p>
+          </div>
+        `;
+        document.getElementById('ticketContent').innerHTML = ticketContent;
+        new bootstrap.Modal(document.getElementById('ticketModal')).show();
+
+        this.reset();
+      }
+    });
+
+    // Handle New Event Creation (Organizer Panel)
+    document.getElementById('addEventForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const newEvent = {
+        id: Date.now(),
+        title: document.getElementById('newEventTitle').value,
+        category: document.getElementById('newEventCategory').value,
+        venue: document.getElementById('newEventVenue').value,
+        seats: parseInt(document.getElementById('newEventSeats').value),
+        desc: document.getElementById('newEventDesc').value
+      };
+      events.unshift(newEvent);
+      renderEvents();
+      bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
+      this.reset();
+    });
+
+    // Initial Render
+    renderEvents();
+  </script>
+</body>
+</html>
